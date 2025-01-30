@@ -1,7 +1,9 @@
 document.getElementById("fileInput").addEventListener("change", handleFile);
 document.getElementById("searchBtn").addEventListener("click", searchClass);
+document.getElementById("downloadBtn").addEventListener("click", downloadPDF);
 
 let timetableData = {}; // Store parsed timetable
+let resultsByDay = {}; // Group results by day
 
 async function handleFile(event) {
     const file = event.target.files[0];
@@ -72,7 +74,7 @@ function searchClass() {
     // Convert search terms into an array & trim spaces
     let searchTerms = searchInput.split(",").map(term => term.trim().toLowerCase());
 
-    let resultsByDay = {}; // Group results by day
+    resultsByDay = {}; // Reset resultsByDay before searching
 
     for (const [day, classes] of Object.entries(timetableData)) {
         let matchingClasses = classes.filter(entry =>
@@ -109,4 +111,40 @@ function searchClass() {
         dayBlock.appendChild(classList);
         resultsContainer.appendChild(dayBlock);
     }
+}
+
+// Function to download the timetable search results as a PDF
+function downloadPDF() {
+    const resultsContainer = document.getElementById("results");
+    if (!resultsContainer.children.length) {
+        alert("No results to download.");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Add Title
+    doc.setFontSize(18);
+    doc.text("FAST Timetable", 20, 20);
+
+    let yOffset = 30;
+
+    // Loop through the results and add them to the PDF
+    for (const [day, entries] of Object.entries(resultsByDay)) {
+        doc.setFontSize(14);
+        doc.text(day, 20, yOffset);
+        yOffset += 10;
+
+        entries.forEach(entry => {
+            doc.setFontSize(12);
+            doc.text(`${entry.time} - ${entry.venue} - ${entry.classInfo}`, 20, yOffset);
+            yOffset += 8;
+        });
+
+        yOffset += 10; // Add some space between days
+    }
+
+    // Save the generated PDF
+    doc.save("TimeTable.pdf");
 }
